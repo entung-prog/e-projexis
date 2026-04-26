@@ -95,6 +95,22 @@ export async function PUT(
       }
     })
 
+    // Log activity on status change
+    if (status && status !== task.status) {
+      const statusNames: Record<string, string> = {
+        TODO: 'To Do',
+        IN_PROGRESS: 'In Progress',
+        DONE: 'Selesai'
+      }
+      await prisma.activityLog.create({
+        data: {
+          message: `mengubah status tugas "${updatedTask.title}" ke ${statusNames[status] || status}`,
+          userId,
+          projectId: task.projectId
+        }
+      })
+    }
+
     return NextResponse.json(updatedTask)
   } catch (error) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

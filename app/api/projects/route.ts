@@ -54,6 +54,15 @@ export async function POST(request: NextRequest) {
       }
     })
 
+    // Log activity
+    await prisma.activityLog.create({
+      data: {
+        message: `membuat proyek baru "${project.name}"`,
+        userId: (session.user as any).id,
+        projectId: project.id
+      }
+    })
+
     return NextResponse.json(project)
   } catch (error) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

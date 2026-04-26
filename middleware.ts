@@ -10,5 +10,13 @@ export default withAuth(
 )
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/proyek/:path*', '/kanban/:path*', '/tugas/:path*', '/tim/:path*', '/analitik/:path*', '/kalender/:path*']
+  matcher: [
+    '/dashboard/:path*',
+    '/proyek/:path*',
+    '/kanban/:path*',
+    '/tugas/:path*',
+    '/tim/:path*',
+    '/analitik/:path*',
+    '/kalender/:path*'
+  ]
 }

@@ -1,14 +1,32 @@
 'use client'
 
 import { SessionProvider } from 'next-auth/react'
+import { ThemeProvider } from 'next-themes'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { Toaster } from '@/components/ui/sonner'
+import { CreateProjectDialog } from '@/components/project/create-project-dialog'
+import { DeleteProjectDialog } from '@/components/project/delete-project-dialog'
+import { CreateTaskDialog } from '@/components/task/create-task-dialog'
+import { TaskDetailDialog } from '@/components/task/task-detail-dialog'
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider>
-      <TooltipProvider>
-        {children}
-      </TooltipProvider>
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="light"
+        enableSystem
+        disableTransitionOnChange
+      >
+        <TooltipProvider>
+          {children}
+          <CreateProjectDialog />
+          <DeleteProjectDialog />
+          <CreateTaskDialog />
+          <TaskDetailDialog />
+          <Toaster position="bottom-right" richColors />
+        </TooltipProvider>
+      </ThemeProvider>
     </SessionProvider>
   )
 }
