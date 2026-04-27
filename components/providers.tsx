@@ -5,6 +5,7 @@ import { ThemeProvider } from 'next-themes'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Toaster } from '@/components/ui/sonner'
 import { CreateProjectDialog } from '@/components/project/create-project-dialog'
+import { EditProjectDialog } from '@/components/project/edit-project-dialog'
 import { DeleteProjectDialog } from '@/components/project/delete-project-dialog'
 import { CreateTaskDialog } from '@/components/task/create-task-dialog'
 import { TaskDetailDialog } from '@/components/task/task-detail-dialog'
@@ -21,6 +22,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <TooltipProvider>
           {children}
           <CreateProjectDialog />
+          <EditProjectDialog />
           <DeleteProjectDialog />
           <CreateTaskDialog />
           <TaskDetailDialog />

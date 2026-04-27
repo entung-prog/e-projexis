@@ -18,7 +18,8 @@ import {
   Trash2,
   CheckCircle2,
   Clock,
-  AlertTriangle
+  AlertTriangle,
+  Pencil
 } from 'lucide-react'
 
 interface ProjectData {
@@ -65,6 +66,7 @@ export default function ProjectDetailPage() {
     setCreateTaskProjectId,
     setCreateTaskStatus,
     setDeleteProjectId,
+    setEditProjectId,
     setSelectedTaskId,
     refreshKey
   } = useAppStore()
@@ -152,6 +154,13 @@ export default function ProjectDetailPage() {
               Kanban Board
             </Button>
           </Link>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setEditProjectId(project.id)}
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
           <Button
             variant="outline"
             size="icon"

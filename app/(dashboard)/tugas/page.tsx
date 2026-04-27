@@ -73,25 +73,11 @@ export default function TugasPage() {
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        const projectsRes = await fetch('/api/projects')
-        if (!projectsRes.ok) { setLoading(false); return }
-        const projects = await projectsRes.json()
-
-        const tasks: TaskListItem[] = []
-        for (const project of projects) {
-          const tasksRes = await fetch(`/api/tasks?projectId=${project.id}`)
-          if (tasksRes.ok) {
-            const projectTasks = await tasksRes.json()
-            for (const task of projectTasks) {
-              tasks.push({
-                ...task,
-                projectName: project.name,
-                projectColor: project.color
-              })
-            }
-          }
+        const res = await fetch('/api/tasks/all')
+        if (res.ok) {
+          const tasks = await res.json()
+          setAllTasks(tasks)
         }
-        setAllTasks(tasks)
       } catch (error) {
         console.error('Tasks fetch error:', error)
       }

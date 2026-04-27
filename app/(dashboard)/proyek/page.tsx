@@ -22,7 +22,8 @@ import {
   Kanban,
   Trash2,
   ExternalLink,
-  FolderKanban
+  FolderKanban,
+  Pencil
 } from 'lucide-react'
 
 interface ProjectItem {
@@ -37,7 +38,7 @@ interface ProjectItem {
 }
 
 export default function ProjectsPage() {
-  const { setCreateProjectOpen, setDeleteProjectId, refreshKey } = useAppStore()
+  const { setCreateProjectOpen, setEditProjectId, setDeleteProjectId, refreshKey } = useAppStore()
   const [projects, setProjects] = useState<ProjectItem[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -162,6 +163,15 @@ export default function ProjectsPage() {
                             <Kanban className="mr-2 h-4 w-4" />
                             Kanban Board
                           </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setEditProjectId(project.id)
+                          }}
+                        >
+                          <Pencil className="mr-2 h-4 w-4" />
+                          Edit Proyek
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="text-destructive focus:text-destructive"

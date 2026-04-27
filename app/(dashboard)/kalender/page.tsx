@@ -45,33 +45,24 @@ export default function CalendarPage() {
   const month = currentDate.getMonth()
 
   useEffect(() => {
-    // Fetch all projects first, then fetch tasks per project
+    // Fetch all tasks in a single API call
     const fetchTasks = async () => {
       try {
-        const projectsRes = await fetch('/api/projects')
-        if (!projectsRes.ok) { setLoading(false); return }
-        const projects = await projectsRes.json()
+        const res = await fetch('/api/tasks/all')
+        if (!res.ok) { setLoading(false); return }
+        const tasks = await res.json()
 
-        const allTasks: CalendarTask[] = []
-        for (const project of projects) {
-          const tasksRes = await fetch(`/api/tasks?projectId=${project.id}`)
-          if (tasksRes.ok) {
-            const projectTasks = await tasksRes.json()
-            for (const task of projectTasks) {
-              if (task.dueDate) {
-                allTasks.push({
-                  id: task.id,
-                  title: task.title,
-                  status: task.status,
-                  priority: task.priority,
-                  dueDate: task.dueDate,
-                  project: { id: project.id, name: project.name }
-                })
-              }
-            }
-          }
-        }
-        setTasks(allTasks)
+        const calendarTasks: CalendarTask[] = tasks
+          .filter((task: any) => task.dueDate)
+          .map((task: any) => ({
+            id: task.id,
+            title: task.title,
+            status: task.status,
+            priority: task.priority,
+            dueDate: task.dueDate,
+            project: { id: task.projectId, name: task.projectName }
+          }))
+        setTasks(calendarTasks)
       } catch (error) {
         console.error('Calendar fetch error:', error)
       }
