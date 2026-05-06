@@ -23,6 +23,9 @@ interface AppState {
   setCreateTaskStatus: (status: string) => void
   selectedTaskId: string | null
   setSelectedTaskId: (id: string | null) => void
+  deleteTaskId: string | null
+  deleteTaskTitle: string
+  setDeleteTask: (id: string | null, title?: string) => void
 
   // Refresh triggers
   refreshKey: number
@@ -52,6 +55,9 @@ export const useAppStore = create<AppState>((set) => ({
   setCreateTaskStatus: (status) => set({ createTaskStatus: status }),
   selectedTaskId: null,
   setSelectedTaskId: (id) => set({ selectedTaskId: id }),
+  deleteTaskId: null,
+  deleteTaskTitle: '',
+  setDeleteTask: (id, title = '') => set({ deleteTaskId: id, deleteTaskTitle: title }),
 
   // Refresh triggers
   refreshKey: 0,

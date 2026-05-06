@@ -18,6 +18,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useAppStore } from '@/store/use-app-store'
 import { Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 const projectSchema = z.object({
   name: z.string().min(1, 'Nama proyek wajib diisi'),
@@ -50,13 +51,17 @@ export function CreateProjectDialog() {
         body: JSON.stringify({ ...data, color: selectedColor })
       })
       if (res.ok) {
+        toast.success('Proyek berhasil dibuat')
         reset()
         setSelectedColor('#6366f1')
         setCreateProjectOpen(false)
         triggerRefresh()
+      } else {
+        toast.error('Gagal membuat proyek')
       }
     } catch (error) {
       console.error('Failed to create project:', error)
+      toast.error('Gagal membuat proyek')
     }
     setLoading(false)
   }

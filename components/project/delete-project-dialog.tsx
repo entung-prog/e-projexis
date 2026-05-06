@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { useAppStore } from '@/store/use-app-store'
 import { useState } from 'react'
 import { Loader2, AlertTriangle } from 'lucide-react'
+import { toast } from 'sonner'
 
 export function DeleteProjectDialog() {
   const { deleteProjectId, setDeleteProjectId, triggerRefresh } = useAppStore()
@@ -25,11 +26,15 @@ export function DeleteProjectDialog() {
         method: 'DELETE'
       })
       if (res.ok) {
+        toast.success('Proyek berhasil dihapus')
         setDeleteProjectId(null)
         triggerRefresh()
+      } else {
+        toast.error('Gagal menghapus proyek')
       }
     } catch (error) {
       console.error('Failed to delete project:', error)
+      toast.error('Gagal menghapus proyek')
     }
     setLoading(false)
   }

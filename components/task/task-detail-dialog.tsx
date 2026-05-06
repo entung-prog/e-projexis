@@ -14,6 +14,15 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
 import { useAppStore } from '@/store/use-app-store'
 import {
   CheckCircle2,
@@ -23,8 +32,13 @@ import {
   Calendar,
   User,
   Loader2,
-  Trash2
+  Trash2,
+  Pencil,
+  X,
+  Save,
+  AlertTriangle
 } from 'lucide-react'
+import { toast } from 'sonner'
 import type { TaskWithDetails } from '@/types'
 
 const statusLabels: Record<string, string> = {
@@ -47,13 +61,30 @@ const priorityColors: Record<string, string> = {
   URGENT: 'bg-red-100 text-red-700'
 }
 
+const statusColors: Record<string, string> = {
+  TODO: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+  IN_PROGRESS: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
+  DONE: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300'
+}
+
 export function TaskDetailDialog() {
-  const { selectedTaskId, setSelectedTaskId, triggerRefresh } = useAppStore()
+  const { selectedTaskId, setSelectedTaskId, triggerRefresh, setDeleteTask } = useAppStore()
   const [task, setTask] = useState<TaskWithDetails | null>(null)
   const [loading, setLoading] = useState(false)
   const [newSubtask, setNewSubtask] = useState('')
   const [newComment, setNewComment] = useState('')
   const [submitting, setSubmitting] = useState(false)
+
+  // Edit mode state
+  const [editMode, setEditMode] = useState(false)
+  const [editTitle, setEditTitle] = useState('')
+  const [editDescription, setEditDescription] = useState('')
+  const [editStatus, setEditStatus] = useState('')
+  const [editPriority, setEditPriority] = useState('')
+  const [editDueDate, setEditDueDate] = useState('')
+  const [editAssignedTo, setEditAssignedTo] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [users, setUsers] = useState<{ id: string; name: string }[]>([])
 
   const fetchTask = useCallback(async () => {
     if (!selectedTaskId) return
@@ -73,10 +104,67 @@ export function TaskDetailDialog() {
   useEffect(() => {
     if (selectedTaskId) {
       fetchTask()
+      setEditMode(false)
     } else {
       setTask(null)
     }
   }, [selectedTaskId, fetchTask])
+
+  // Populate edit fields when entering edit mode
+  const enterEditMode = () => {
+    if (!task) return
+    setEditTitle(task.title)
+    setEditDescription(task.description || '')
+    setEditStatus(task.status)
+    setEditPriority(task.priority)
+    setEditDueDate(task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '')
+    setEditAssignedTo(task.assignedTo || '')
+    setEditMode(true)
+
+    // Fetch users for assignee dropdown
+    fetch('/api/users')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setUsers(data)
+      })
+      .catch(() => {})
+  }
+
+  const handleSaveEdit = async () => {
+    if (!selectedTaskId || !editTitle.trim()) return
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/tasks/${selectedTaskId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: editTitle.trim(),
+          description: editDescription.trim() || null,
+          status: editStatus,
+          priority: editPriority,
+          dueDate: editDueDate || null,
+          assignedTo: editAssignedTo || null
+        })
+      })
+      if (res.ok) {
+        toast.success('Tugas berhasil diperbarui')
+        setEditMode(false)
+        fetchTask()
+        triggerRefresh()
+      } else {
+        toast.error('Gagal memperbarui tugas')
+      }
+    } catch (error) {
+      console.error('Failed to update task:', error)
+      toast.error('Gagal memperbarui tugas')
+    }
+    setSaving(false)
+  }
+
+  const handleDeleteTask = () => {
+    if (!task) return
+    setDeleteTask(task.id, task.title)
+  }
 
   const handleToggleSubtask = async (subtaskId: string, completed: boolean) => {
     try {
@@ -102,8 +190,10 @@ export function TaskDetailDialog() {
       })
       setNewSubtask('')
       fetchTask()
+      toast.success('Subtask ditambahkan')
     } catch (error) {
       console.error('Failed to add subtask:', error)
+      toast.error('Gagal menambahkan subtask')
     }
     setSubmitting(false)
   }
@@ -112,6 +202,7 @@ export function TaskDetailDialog() {
     try {
       await fetch(`/api/subtasks/${subtaskId}`, { method: 'DELETE' })
       fetchTask()
+      toast.success('Subtask dihapus')
     } catch (error) {
       console.error('Failed to delete subtask:', error)
     }
@@ -128,8 +219,10 @@ export function TaskDetailDialog() {
       })
       setNewComment('')
       fetchTask()
+      toast.success('Komentar ditambahkan')
     } catch (error) {
       console.error('Failed to add comment:', error)
+      toast.error('Gagal menambahkan komentar')
     }
     setSubmitting(false)
   }
@@ -137,12 +230,16 @@ export function TaskDetailDialog() {
   const completedSubtasks = task?.subtasks?.filter(s => s.completed).length ?? 0
   const totalSubtasks = task?.subtasks?.length ?? 0
 
+  // Overdue check
+  const isOverdue = task?.dueDate && task.status !== 'DONE' && new Date(task.dueDate) < new Date()
+
   return (
     <Dialog
       open={!!selectedTaskId}
       onOpenChange={(open) => {
         if (!open) {
           setSelectedTaskId(null)
+          setEditMode(false)
           triggerRefresh()
         }
       }}
@@ -157,54 +254,181 @@ export function TaskDetailDialog() {
             <div className="p-6 space-y-6">
               <DialogHeader>
                 <div className="flex items-start justify-between gap-4">
-                  <div className="space-y-1">
-                    <DialogTitle className="text-xl">{task.title}</DialogTitle>
+                  <div className="space-y-1 flex-1">
+                    {editMode ? (
+                      <Input
+                        value={editTitle}
+                        onChange={(e) => setEditTitle(e.target.value)}
+                        className="text-xl font-semibold"
+                        placeholder="Judul tugas"
+                      />
+                    ) : (
+                      <DialogTitle className="text-xl">{task.title}</DialogTitle>
+                    )}
                     <DialogDescription>
                       {task.project?.name}
                     </DialogDescription>
                   </div>
-                  <div className="flex gap-2">
-                    <Badge variant="outline">
-                      {statusLabels[task.status] || task.status}
-                    </Badge>
-                    <Badge className={priorityColors[task.priority]}>
-                      {priorityLabels[task.priority] || task.priority}
-                    </Badge>
+                  <div className="flex gap-2 flex-shrink-0">
+                    {!editMode ? (
+                      <>
+                        <Badge variant="outline" className={statusColors[task.status]}>
+                          {statusLabels[task.status] || task.status}
+                        </Badge>
+                        <Badge className={priorityColors[task.priority]}>
+                          {priorityLabels[task.priority] || task.priority}
+                        </Badge>
+                      </>
+                    ) : null}
                   </div>
                 </div>
               </DialogHeader>
 
-              {/* Task Description */}
-              {task.description && (
-                <div>
-                  <h4 className="text-sm font-medium mb-2">Deskripsi</h4>
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                    {task.description}
-                  </p>
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2">
+                {editMode ? (
+                  <>
+                    <Button size="sm" onClick={handleSaveEdit} disabled={saving || !editTitle.trim()}>
+                      {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                      Simpan
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setEditMode(false)} disabled={saving}>
+                      <X className="mr-2 h-4 w-4" />
+                      Batal
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button size="sm" variant="outline" onClick={enterEditMode}>
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Edit
+                    </Button>
+                    <Button size="sm" variant="outline" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={handleDeleteTask}>
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Hapus
+                    </Button>
+                  </>
+                )}
+              </div>
+
+              {/* Overdue Warning */}
+              {isOverdue && !editMode && (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800">
+                  <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0" />
+                  <span className="text-sm text-red-600 dark:text-red-400 font-medium">
+                    Tugas ini sudah melewati deadline!
+                  </span>
                 </div>
               )}
 
-              {/* Meta Info */}
-              <div className="flex flex-wrap gap-4 text-sm">
-                {task.assignee && (
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-muted-foreground" />
-                    <span>{task.assignee.name}</span>
+              {/* Edit Mode Fields */}
+              {editMode ? (
+                <div className="space-y-4 p-4 rounded-xl bg-accent/30 border border-border/50">
+                  <div className="space-y-2">
+                    <Label>Deskripsi</Label>
+                    <Textarea
+                      value={editDescription}
+                      onChange={(e) => setEditDescription(e.target.value)}
+                      placeholder="Deskripsi tugas..."
+                      rows={3}
+                    />
                   </div>
-                )}
-                {task.dueDate && (
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span>
-                      {new Date(task.dueDate).toLocaleDateString('id-ID', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric'
-                      })}
-                    </span>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Status</Label>
+                      <Select value={editStatus} onValueChange={setEditStatus}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="TODO">To Do</SelectItem>
+                          <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                          <SelectItem value="DONE">Selesai</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Prioritas</Label>
+                      <Select value={editPriority} onValueChange={setEditPriority}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="LOW">Rendah</SelectItem>
+                          <SelectItem value="MEDIUM">Sedang</SelectItem>
+                          <SelectItem value="HIGH">Tinggi</SelectItem>
+                          <SelectItem value="URGENT">Urgent</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                )}
-              </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Deadline</Label>
+                      <Input
+                        type="date"
+                        value={editDueDate}
+                        onChange={(e) => setEditDueDate(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Assign ke</Label>
+                      <Select value={editAssignedTo} onValueChange={setEditAssignedTo}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Pilih anggota" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">Tidak ada</SelectItem>
+                          {users.map((user) => (
+                            <SelectItem key={user.id} value={user.id}>
+                              {user.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Task Description */}
+                  {task.description && (
+                    <div>
+                      <h4 className="text-sm font-medium mb-2">Deskripsi</h4>
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                        {task.description}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Meta Info */}
+                  <div className="flex flex-wrap gap-4 text-sm">
+                    {task.assignee && (
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <span>{task.assignee.name}</span>
+                      </div>
+                    )}
+                    {task.dueDate && (
+                      <div className={`flex items-center gap-2 ${isOverdue ? 'text-red-500 font-medium' : ''}`}>
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <span>
+                          {new Date(task.dueDate).toLocaleDateString('id-ID', {
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric'
+                          })}
+                        </span>
+                        {isOverdue && (
+                          <Badge variant="destructive" className="text-[10px] h-5 px-1.5">
+                            Terlambat
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
 
               <Separator />
 

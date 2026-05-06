@@ -9,6 +9,7 @@ import { EditProjectDialog } from '@/components/project/edit-project-dialog'
 import { DeleteProjectDialog } from '@/components/project/delete-project-dialog'
 import { CreateTaskDialog } from '@/components/task/create-task-dialog'
 import { TaskDetailDialog } from '@/components/task/task-detail-dialog'
+import { DeleteTaskDialog } from '@/components/task/delete-task-dialog'
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -26,6 +27,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           <DeleteProjectDialog />
           <CreateTaskDialog />
           <TaskDetailDialog />
+          <DeleteTaskDialog />
           <Toaster position="bottom-right" richColors />
         </TooltipProvider>
       </ThemeProvider>

@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/select'
 import { useAppStore } from '@/store/use-app-store'
 import { Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 const taskSchema = z.object({
   title: z.string().min(1, 'Judul tugas wajib diisi'),
@@ -78,13 +79,17 @@ export function CreateTaskDialog() {
         })
       })
       if (res.ok) {
+        toast.success('Tugas berhasil dibuat')
         reset()
         setAssignedTo('')
         setCreateTaskOpen(false)
         triggerRefresh()
+      } else {
+        toast.error('Gagal membuat tugas')
       }
     } catch (error) {
       console.error('Failed to create task:', error)
+      toast.error('Gagal membuat tugas')
     }
     setLoading(false)
   }
